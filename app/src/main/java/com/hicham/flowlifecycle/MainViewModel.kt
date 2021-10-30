@@ -6,25 +6,11 @@ import androidx.lifecycle.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 
-class MainViewModel(application: Application) : AndroidViewModel(application) {
+class MainViewModel(application: Application) : BaseViewModel(application) {
     private val locationObserver = LocationObserver(application)
     private val api: FakeApi = FakeApi()
 
     private val hasLocationPermission = MutableStateFlow(false)
-
-    private val lifeCycleState = MutableSharedFlow<Lifecycle.State>(
-        replay = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
-
-    private val lifecycleObserver = object : LifecycleEventObserver {
-        override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-            lifeCycleState.tryEmit(source.lifecycle.currentState)
-            if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
-                source.lifecycle.removeObserver(this)
-            }
-        }
-    }
 
     private val locationUpdates: Flow<Location> = hasLocationPermission
         .filter { it }
@@ -49,18 +35,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onLocationPermissionGranted() {
         hasLocationPermission.value = true
-    }
-
-    fun startObservingLifecycle(lifecycleOwner: LifecycleOwner) {
-        lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
-    }
-
-    private fun <T> Flow<T>.whenAtLeast(requiredState: Lifecycle.State): Flow<T> {
-        return lifeCycleState.map { state -> state.isAtLeast(requiredState) }
-            .distinctUntilChanged()
-            .flatMapLatest {
-                if (it) this else emptyFlow()
-            }
     }
 }
 
