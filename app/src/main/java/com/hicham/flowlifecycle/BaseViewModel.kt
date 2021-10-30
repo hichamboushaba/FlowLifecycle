@@ -16,8 +16,8 @@ open class BaseViewModel(application: Application): AndroidViewModel(application
 
     private val lifecycleObserver = object : LifecycleEventObserver {
         override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-            lifeCycleState.tryEmit(source.lifecycle.currentState)
-            if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
+            lifeCycleState.tryEmit(event.targetState)
+            if (event.targetState == Lifecycle.State.DESTROYED) {
                 source.lifecycle.removeObserver(this)
             }
         }
