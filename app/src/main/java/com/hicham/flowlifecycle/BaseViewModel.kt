@@ -23,8 +23,8 @@ open class BaseViewModel(application: Application): AndroidViewModel(application
         }
     }
 
-    fun startObservingLifecycle(lifecycleOwner: LifecycleOwner) {
-        lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
+    fun startObservingLifecycle(lifecycle: Lifecycle) {
+        lifecycle.addObserver(lifecycleObserver)
     }
 
     protected fun <T> Flow<T>.whenAtLeast(requiredState: Lifecycle.State): Flow<T> {

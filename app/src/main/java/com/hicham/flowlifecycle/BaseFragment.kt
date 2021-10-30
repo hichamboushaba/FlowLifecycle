@@ -11,6 +11,6 @@ abstract class BaseFragment<T : BaseViewModel>(@LayoutRes contentLayoutId: Int) 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        viewModel.startObservingLifecycle(viewLifecycleOwner)
+        viewModel.startObservingLifecycle(viewLifecycleOwner.lifecycle)
     }
 }
