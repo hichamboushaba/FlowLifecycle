@@ -5,10 +5,12 @@ import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.os.Bundle
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.viewbinding.ViewBinding
 import com.hicham.flowlifecycle.databinding.FragmentMainBinding
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -44,8 +46,25 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.locationUpdates
                 .flowWithLifecycle(viewLifecycleOwner.lifecycle)
-                .onEach { binding.location.text = "${it.latitude} ${it.longitude}" }
+                .launchIn(this)
+            viewModel.viewState
+                .onEach { viewState ->
+                    binding.render(viewState)
+                }
                 .launchIn(this)
         }
     }
+
+    private fun FragmentMainBinding.render(viewState: ViewState) {
+        progressBar.isVisible = viewState.isLoading
+        locationText.isVisible = !viewState.isLoading
+        nearbyLocations.isVisible = !viewState.isLoading
+
+        viewState.location?.let {
+            locationText.text = "${it.latitude} ${it.longitude}"
+        }
+        nearbyLocations.text = viewState.nearbyLocations.joinToString(",")
+    }
 }
+
+

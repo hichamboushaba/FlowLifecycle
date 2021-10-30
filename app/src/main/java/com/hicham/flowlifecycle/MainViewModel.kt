@@ -4,20 +4,38 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.location.Location
 import androidx.lifecycle.AndroidViewModel
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.flatMapLatest
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.*
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val locationObserver = LocationObserver(application)
+    private val api: FakeApi = FakeApi()
 
     private val hasLocationPermission = MutableStateFlow(false)
 
-    @SuppressLint("MissingPermission")
     val locationUpdates: Flow<Location> = hasLocationPermission
         .filter { it }
         .flatMapLatest { locationObserver.observeLocationUpdates() }
+        .onEach { currentLocation.emit(it) }
+
+    private val currentLocation = MutableSharedFlow<Location>()
+
+    val viewState: Flow<ViewState> = currentLocation
+        .mapLatest { location ->
+            val nearbyLocations = api.fetchNearbyLocations(location.latitude, location.longitude)
+            ViewState(
+                isLoading = false,
+                location = location,
+                nearbyLocations = nearbyLocations
+            )
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000L),
+            initialValue = ViewState(isLoading = true)
+        )
+
 
     fun onLocationPermissionGranted() {
         hasLocationPermission.value = true
@@ -25,6 +43,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 }
 
 data class ViewState(
-    val location: Location,
-    val nearbyLocations: List<String>
+    val isLoading: Boolean,
+    val location: Location? = null,
+    val nearbyLocations: List<String> = emptyList()
 )
